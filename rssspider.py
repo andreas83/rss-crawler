@@ -7,8 +7,7 @@ def get_urls_from_csv():
         data = csv.reader(csv_file, delimiter=',')
         scrapurls = []
         for row in data:
-            scrapurls.append("http://"+row[2])
-        return scrapurls
+             yield row[2]
 
 class rssitem(scrapy.Item):
     sourceurl = scrapy.Field()
@@ -21,14 +20,15 @@ class RssparserSpider(scrapy.Spider):
     start_urls = ()
 
     def start_requests(self):
-        return [scrapy.http.Request(url=start_url) for start_url in get_urls_from_csv()]
+        for start_url in get_urls_from_csv():
+            yield scrapy.http.Request(url="http://{}".format(start_url))
+
 
     def parse(self, response):
         res = response.xpath('//link[@type="application/rss+xml"]/@href')
         for sel in res:
             item = rssitem()
             item['sourceurl']=response.url
-            item['rssurl']=sel.extract()
+            item['rssurl']=response.urljoin(sel.extract())
             yield item
-
         pass
